@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+版本: 1.2.1
+更改时间: 2021/10/10 14:30
+更新内容: 优化tomcat依赖, 方便打包部署, 打包方式默认为 war 包
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.5.2</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com</groupId>
+    <artifactId>web-rtc2</artifactId>
+    <version>${web-version}</version>
+
+    <name>${web-name}</name>
+
+    <packaging>jar</packaging>
+
+    <description>Demo project for Spring Boot</description>
+
+    <!--jar版本控制-->
+    <properties>
+        <!--web版本-->
+        <web-version>0.0.1-SNAPSHOT</web-version>
+        <web-name>web-rtc2</web-name>
+
+        <!--springboot属性-->
+        <java.version>1.8</java.version>
+        <mysql.version>8.0.23</mysql.version>
+        <!--自定义属性-->
+        <mybatisplus.version>3.4.3.1</mybatisplus.version>
+        <mybatisplus.generator.verion>3.4.1</mybatisplus.generator.verion>
+        <druid.version>1.2.6</druid.version>
+        <fastjson.version>1.2.76</fastjson.version>
+        <jwt.version>3.18.1</jwt.version>
+        <validator.version>5.4.1.Final</validator.version>
+        <pinyin4j.version>2.5.0</pinyin4j.version>
+    </properties>
+
+    <!--导入的场景: thymeleaf、web、tomcat、mybatis-plus、druid、redis、websocket-->
+    <!--必要的依赖: pool2、mysql、jwt、validator、aspectj、fastjson、gson、lombok、test-->
+    <!--扩展——MybatisPlus代码生成器: mybatis-plus-generator、freemarker-->
+    <!--扩展——打包工具: devtools、processor-->
+    <!--扩展: email、阿里云短信服务依赖、pinyin4j-->
+    <dependencies>
+        <!--thymeleaf-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <!--web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.springframework.boot</groupId>-->
+<!--                    <artifactId>spring-boot-starter-tomcat</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+        </dependency>
+        <!-- 这个依赖让你能够在程序入口类：xxxAppAplication中直接执行main方法启动tomcat -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <!-- 但是这里一定要设置为provided -->
+            <scope>provided</scope>
+        </dependency>
+        <!--websocket-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+
+        <!--fastjson-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>${fastjson.version}</version>
+        </dependency>
+
+
+
+        <!--gson-->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+
+
+
+        <!--lombok-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+
+
+        <!--test-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
+
+
+
+        <!--devtools-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <!--processor-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+
+    </dependencies>
+
+    <build>
+        <finalName>${web-name}</finalName>
+
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+        </plugins>
+
+
+
+        <resources>
+            <!--springboot启动时，src/main/java下只会扫描加载.java文件，
+                而我的mapper.xml是放在src/main/java目录下，这里配置去扫描 xml文件-->
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+
+            <!--编译resources下的所有文件-->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.*</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+
+</project>
