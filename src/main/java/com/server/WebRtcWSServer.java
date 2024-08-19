@@ -85,7 +85,7 @@ public class WebRtcWSServer {
             Object offerOrAnswer =  hashMap.get("offerOrAnswer");
 
             //ice
-            Map candidate  = (Map) hashMap.get("candidate");
+            Object candidate  =  hashMap.get("candidate");
 
             HashMap<String, Object> map = new HashMap<>();
             map.put("type",type);
