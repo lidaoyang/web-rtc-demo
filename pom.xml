@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!--
-版本: 1.2.1
-更改时间: 2021/10/10 14:30
-更新内容: 优化tomcat依赖, 方便打包部署, 打包方式默认为 war 包
--->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -18,7 +11,7 @@
     </parent>
 
     <groupId>com</groupId>
-    <artifactId>web-rtc2</artifactId>
+    <artifactId>web-rtc-demo</artifactId>
     <version>${web-version}</version>
 
     <name>${web-name}</name>
@@ -31,7 +24,7 @@
     <properties>
         <!--web版本-->
         <web-version>0.0.1-SNAPSHOT</web-version>
-        <web-name>web-rtc2</web-name>
+        <web-name>web-rtc-demo</web-name>
 
         <!--springboot属性-->
         <java.version>1.8</java.version>
@@ -46,11 +39,6 @@
         <pinyin4j.version>2.5.0</pinyin4j.version>
     </properties>
 
-    <!--导入的场景: thymeleaf、web、tomcat、mybatis-plus、druid、redis、websocket-->
-    <!--必要的依赖: pool2、mysql、jwt、validator、aspectj、fastjson、gson、lombok、test-->
-    <!--扩展——MybatisPlus代码生成器: mybatis-plus-generator、freemarker-->
-    <!--扩展——打包工具: devtools、processor-->
-    <!--扩展: email、阿里云短信服务依赖、pinyin4j-->
     <dependencies>
         <!--thymeleaf-->
         <dependency>
@@ -90,15 +78,6 @@
         </dependency>
 
 
-
-        <!--gson-->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-
-
-
         <!--lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -114,10 +93,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-
-
-
 
         <!--devtools-->
         <dependency>
