@@ -102,8 +102,6 @@
     </div>
 </div>
 </body>
-<!-- 可引可不引 -->
-<!--<script th:src="@{/js/adapter-2021.js}"></script>-->
 <script type="text/javascript" th:inline="javascript">
     let username = location.search.replace("?", "");
     let localVideo = document.getElementById('localVideo');
@@ -205,8 +203,7 @@
                         localVideo.srcObject = stream;
                         //最后创建用于 answer 的 SDP 对象
                         createAnswer(sdp => {
-                            console.log('创建并发送 answer,sdp:', sdp);
-                            // sendMsg('answer', sdp);
+                            console.log('创建并发送 answer');
                             let msgObj = {
                                 type: 'answer',
                                 fromUser: username,
@@ -233,15 +230,14 @@
     function WebRTCInit() {
         // 1、创建端点
         createPeerConnection();
-        type: '_ice',
-            // 2、绑定 收集 candidate 的回调
-            bindOnIceCandidate(candidate =>
-                websocket.send(JSON.stringify({
-                    type: '_ice',
-                    toUser: document.getElementById('toUser').value,
-                    fromUser: username,
-                    candidate: candidate
-                })));
+        // 2、绑定 收集 candidate 的回调
+        bindOnIceCandidate(candidate =>
+            websocket.send(JSON.stringify({
+                type: '_ice',
+                toUser: document.getElementById('toUser').value,
+                fromUser: username,
+                candidate: candidate
+            })));
         // 3、绑定 获得 远程视频流 的回调
         bindOnTrack(stream => {
             console.log('获得远程视频流');
@@ -299,17 +295,17 @@
 
             if (localVideo.srcObject) {
                 const videoTracks = localVideo.srcObject.getVideoTracks();
-                videoTracks.forEach(videoTrack => {
-                    videoTrack.stop();
-                    localVideo.srcObject.removeTrack(videoTrack);
+                videoTracks.forEach(track => {
+                    track.stop();
+                    localVideo.srcObject.removeTrack(track);
                 });
             }
 
             if (remoteVideo.srcObject) {
                 const videoTracks = remoteVideo.srcObject.getVideoTracks();
-                videoTracks.forEach(videoTrack => {
-                    videoTrack.stop();
-                    remoteVideo.srcObject.removeTrack(videoTrack);
+                videoTracks.forEach(track => {
+                    track.stop();
+                    remoteVideo.srcObject.removeTrack(track);
                 });
 
                 //挂断同时，通知对方
