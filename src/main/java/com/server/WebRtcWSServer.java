@@ -82,10 +82,10 @@ public class WebRtcWSServer {
             String msg = (String) hashMap.get("msg");
 
             //sdp
-            String sdp = (String) hashMap.get("sdp");
+            Object sdp =  hashMap.get("sdp");
 
             //ice
-            Map iceCandidate  = (Map) hashMap.get("iceCandidate");
+            Map candidate  = (Map) hashMap.get("candidate");
 
             HashMap<String, Object> map = new HashMap<>();
             map.put("type",type);
@@ -139,7 +139,7 @@ public class WebRtcWSServer {
             if ("_ice".equals(type)) {
                 map.put("fromUser",toUser);
                 map.put("callType",callType);
-                map.put("iceCandidate",iceCandidate);
+                map.put("candidate",candidate);
             }
 
             send(toUserSession,mapper.writeValueAsString(map));

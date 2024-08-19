@@ -7,16 +7,18 @@
     <title>WebRTC + WebSocket</title>
     <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
     <style>
-        html,body{
+        html, body {
             margin: 0;
             padding: 0;
         }
-        #main{
+
+        #main {
             position: absolute;
             width: 370px;
             height: 550px;
         }
-        #localVideo{
+
+        #localVideo {
             position: absolute;
             background: #757474;
             top: 10px;
@@ -25,7 +27,8 @@
             height: 150px;
             z-index: 2;
         }
-        #remoteVideo{
+
+        #remoteVideo {
             position: absolute;
             top: 0px;
             left: 0px;
@@ -33,26 +36,30 @@
             height: 100%;
             background: #222;
         }
-        #buttons{
+
+        #buttons {
             z-index: 3;
             bottom: 20px;
             left: 90px;
             position: absolute;
         }
-        #toUser{
+
+        #toUser {
             border: 1px solid #ccc;
             padding: 7px 0px;
             border-radius: 5px;
             padding-left: 5px;
             margin-bottom: 5px;
         }
-        #toUser:focus{
+
+        #toUser:focus {
             border-color: #66afe9;
             outline: 0;
-            -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
-            box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6)
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6)
         }
-        #call{
+
+        #call {
             width: 70px;
             height: 35px;
             background-color: #00BB00;
@@ -61,7 +68,8 @@
             color: white;
             border-radius: 5px;
         }
-        #audio-call{
+
+        #audio-call {
             width: 70px;
             height: 35px;
             background-color: #0879ea;
@@ -70,12 +78,13 @@
             color: white;
             border-radius: 5px;
         }
-        #hangup{
-            width:70px;
-            height:35px;
-            background-color:#FF5151;
-            border:none;
-            color:white;
+
+        #hangup {
+            width: 70px;
+            height: 35px;
+            background-color: #FF5151;
+            border: none;
+            color: white;
             border-radius: 5px;
         }
     </style>
@@ -100,16 +109,15 @@
     let localVideo = document.getElementById('localVideo');
     let remoteVideo = document.getElementById('remoteVideo');
     let websocket = null;
-    let peer = null;
 
     WebSocketInit();
     ButtonFunInit();
 
     /* WebSocket */
-    function WebSocketInit(){
+    function WebSocketInit() {
         //判断当前浏览器是否支持WebSocket
         if ('WebSocket' in window) {
-            websocket = new WebSocket("wss://172.16.85.134:8080/webrtc/"+username);
+            websocket = new WebSocket("wss://172.16.85.134:8080/webrtc/" + username);
         } else {
             alert("当前浏览器不支持WebSocket！");
         }
@@ -132,180 +140,164 @@
         //接收到消息的回调方法
         websocket.onmessage = async function (event) {
             console.log('收到消息：', event.data);
-            let { type, fromUser, msg, sdp, iceCandidate,callType } = JSON.parse(event.data.replace(/\n/g,"\\n").replace(/\r/g,"\\r"));
-            let mediaConfig ={};
-            if(callType === "video"){
-                mediaConfig = { video: true, audio: true };
-            }else{
-                mediaConfig = { audio: true };
+            let {type, fromUser, msg, sdp, candidate, callType} = JSON.parse(event.data);
+            let mediaConstraints = {};
+            if (callType === "video") {
+                mediaConstraints = {video: true, audio: true};
+            } else {
+                mediaConstraints = {audio: true};
             }
             console.log('type:', type);
 
             if (type === 'hangup') {
                 console.log(msg);
                 document.getElementById('hangup').click();
-                return;
-            }
-
-            if (type === 'call_start') {
+            } else if (type === 'call_start') {
                 let msg = "0"
-                if(confirm(fromUser + "发起视频通话，确定接听吗")==true){
+                if (confirm(fromUser + "发起视频通话，确定接听吗") == true) {
                     document.getElementById('toUser').value = fromUser;
+                    let toUser = fromUser;
                     WebRTCInit();
                     msg = "1"
                 }
-
                 websocket.send(JSON.stringify({
-                    type:"call_back",
-                    toUser:fromUser,
-                    fromUser:username,
+                    type: "call_back",
+                    toUser: fromUser,
+                    fromUser: username,
                     callType: callType,
-                    msg:msg
+                    msg: msg
                 }));
-
-                return;
-            }
-
-            if (type === 'call_back') {
-                if(msg === "1"){
+            } else if (type === 'call_back') {
+                if (msg === "1") {
                     console.log(document.getElementById('toUser').value + "同意视频通话");
-                    //创建本地视频并发送offer
-                    let stream = await navigator.mediaDevices.getUserMedia(mediaConfig)
-                    localVideo.srcObject = stream;
-                    stream.getTracks().forEach(track => {
-                        peer.addTrack(track, stream);
+                    // 先打开视频流, 在创建用于 offer 的 SDP 对象
+                    openLocalMedia(mediaConstraints, stream => {
+                        // 显示本地视频流
+                        localVideo.srcObject = stream;
+                        createOffer(sdp => {
+                            console.log('创建并发送 offer,sdp:', sdp);
+                            let msgObj = {
+                                type: 'offer',
+                                fromUser: username,
+                                toUser: document.getElementById('toUser').value,
+                                callType: callType,
+                                sdp: sdp
+                            }
+                            websocket.send(JSON.stringify(msgObj));
+                        });
                     });
 
-                    let offer = await peer.createOffer();
-                    await peer.setLocalDescription(offer);
-                    let newOffer = offer;
-                    newOffer["fromUser"] = username;
-                    newOffer["toUser"] = document.getElementById('toUser').value;
-                    newOffer['callType']= callType;
-                    websocket.send(JSON.stringify(newOffer));
-                }else if(msg === "0"){
+                } else if (msg === "0") {
                     alert(document.getElementById('toUser').value + "拒绝视频通话");
                     document.getElementById('hangup').click();
-                }else{
+                } else {
                     alert(msg);
                     document.getElementById('hangup').click();
                 }
+            } else if (type === 'offer') {
+                console.log('收到offer');
+                //先保存收到的 offer
+                saveSdp(sdp, () => {
+                    console.log('offer 保存成功');
 
-                return;
-            }
-
-            if (type === 'offer') {
-                let stream = await navigator.mediaDevices.getUserMedia(mediaConfig);
-                localVideo.srcObject = stream;
-                stream.getTracks().forEach(track => {
-                    peer.addTrack(track, stream);
+                    //再打开音视频流
+                    openLocalMedia(mediaConstraints, stream => {
+                        localVideo.srcObject = stream;
+                        //最后创建用于 answer 的 SDP 对象
+                        createAnswer(sdp => {
+                            console.log('创建并发送 answer,sdp:', sdp);
+                            // sendMsg('answer', sdp);
+                            let msgObj = {
+                                type: 'answer',
+                                fromUser: username,
+                                toUser: document.getElementById('toUser').value,
+                                callType: callType,
+                                sdp: sdp
+                            }
+                            websocket.send(JSON.stringify(msgObj));
+                        });
+                    });
                 });
-
-                await peer.setRemoteDescription(new RTCSessionDescription({ type, sdp }));
-                let answer = await peer.createAnswer();
-                let newAnswer = answer;
-
-                newAnswer["fromUser"] = username;
-                newAnswer["toUser"] = document.getElementById('toUser').value;
-                newAnswer['callType']= callType;
-                websocket.send(JSON.stringify(newAnswer));
-
-                await peer.setLocalDescription(answer);
-                return;
-            }
-
-            if (type === 'answer') {
-                peer.setRemoteDescription(new RTCSessionDescription({ type, sdp }));
-                return;
-            }
-
-            if (type === '_ice') {
-                peer.addIceCandidate(iceCandidate);
-                return;
+            } else if (type === 'answer') {
+                console.log('收到 answer');
+                saveSdp(sdp, () => console.log('answer 保存成功'));
+            } else if (type === '_ice') {
+                //用于交换 candidate
+                saveIceCandidate(candidate);
             }
 
         }
     }
-    //ice服务器信息, 用于创建 SDP 对象
-    let iceServers = {
-        "iceServers": [
-            {"url": "stun:stun.l.google.com:19302"},
-            // {"urls": ["stun:159.75.239.36:3478"]},
-            // {"urls": ["turn:159.75.239.36:3478"], "username": "chr", "credential": "123456"},
-        ]
-    };
-    /* WebRTC */
-    function WebRTCInit(){
-        peer = new RTCPeerConnection(iceServers);
 
-        //ice
-        peer.onicecandidate = function (e) {
-            if (e.candidate) {
+    /* WebRTC */
+    function WebRTCInit() {
+        // 1、创建端点
+        createPeerConnection();
+        type: '_ice',
+            // 2、绑定 收集 candidate 的回调
+            bindOnIceCandidate(candidate =>
                 websocket.send(JSON.stringify({
                     type: '_ice',
-                    toUser:document.getElementById('toUser').value,
-                    fromUser:username,
-                    iceCandidate: e.candidate
-                }));
-            }
-        };
-
-        //track
-        peer.ontrack = function (e) {
-            if (e && e.streams) {
-                remoteVideo.srcObject = e.streams[0];
-            }
-        };
+                    toUser: document.getElementById('toUser').value,
+                    fromUser: username,
+                    candidate: candidate
+                })));
+        // 3、绑定 获得 远程视频流 的回调
+        bindOnTrack(stream => {
+            console.log('获得远程视频流');
+            //显示 远程视频流
+            remoteVideo.srcObject = stream;
+        });
     }
 
     /* 按钮事件 */
-    function ButtonFunInit(){
+    function ButtonFunInit() {
         //视频通话
-        document.getElementById('call').onclick = function (e){
+        document.getElementById('call').onclick = function (e) {
             document.getElementById('toUser').style.visibility = 'hidden';
             let toUser = document.getElementById('toUser').value;
-            if(!toUser){
+            if (!toUser) {
                 alert("请先指定好友账号，再发起视频通话！");
                 return;
             }
 
-            if(peer == null){
+            if (rtcPeerConnection == null) {
                 WebRTCInit();
             }
 
             websocket.send(JSON.stringify({
-                type:"call_start",
-                fromUser:username,
-                toUser:toUser,
+                type: "call_start",
+                fromUser: username,
+                toUser: toUser,
                 callType: "video"
             }));
         }
         //语音通话
-        document.getElementById('audio-call').onclick = function (e){
+        document.getElementById('audio-call').onclick = function (e) {
             document.getElementById('toUser').style.visibility = 'hidden';
             let toUser = document.getElementById('toUser').value;
-            if(!toUser){
+            if (!toUser) {
                 alert("请先指定好友账号，再发起语音通话！");
                 return;
             }
 
-            if(peer == null){
+            if (rtcPeerConnection == null) {
                 WebRTCInit();
             }
 
             websocket.send(JSON.stringify({
-                type:"call_start",
-                fromUser:username,
-                toUser:toUser,
+                type: "call_start",
+                fromUser: username,
+                toUser: toUser,
                 callType: "audio"
             }));
         }
 
         //挂断
-        document.getElementById('hangup').onclick = function (e){
+        document.getElementById('hangup').onclick = function (e) {
             document.getElementById('toUser').style.visibility = 'unset';
 
-            if(localVideo.srcObject){
+            if (localVideo.srcObject) {
                 const videoTracks = localVideo.srcObject.getVideoTracks();
                 videoTracks.forEach(videoTrack => {
                     videoTrack.stop();
@@ -313,7 +305,7 @@
                 });
             }
 
-            if(remoteVideo.srcObject){
+            if (remoteVideo.srcObject) {
                 const videoTracks = remoteVideo.srcObject.getVideoTracks();
                 videoTracks.forEach(videoTrack => {
                     videoTrack.stop();
@@ -322,29 +314,36 @@
 
                 //挂断同时，通知对方
                 websocket.send(JSON.stringify({
-                    type:"hangup",
-                    fromUser:username,
-                    toUser:document.getElementById('toUser').value,
+                    type: "hangup",
+                    fromUser: username,
+                    toUser: document.getElementById('toUser').value,
                 }));
             }
+            if (rtcPeerConnection) {
+                rtcPeerConnection.ontrack = null;
+                rtcPeerConnection.onremovetrack = null;
+                rtcPeerConnection.onremovestream = null;
+                rtcPeerConnection.onicecandidate = null;
+                rtcPeerConnection.oniceconnectionstatechange = null;
+                rtcPeerConnection.onsignalingstatechange = null;
+                rtcPeerConnection.onicegatheringstatechange = null;
+                rtcPeerConnection.onnegotiationneeded = null;
 
-            if(peer){
-                peer.ontrack = null;
-                peer.onremovetrack = null;
-                peer.onremovestream = null;
-                peer.onicecandidate = null;
-                peer.oniceconnectionstatechange = null;
-                peer.onsignalingstatechange = null;
-                peer.onicegatheringstatechange = null;
-                peer.onnegotiationneeded = null;
-
-                peer.close();
-                peer = null;
+                rtcPeerConnection.close();
+                rtcPeerConnection = null;
             }
 
             localVideo.srcObject = null;
             remoteVideo.srcObject = null;
         }
     }
+</script>
+<script src="./js/webrtc-util.js" type="text/javascript"></script>
+
+<!--手机端查看浏览器控制台-->
+<script src="./js/jsdelivr-eruda.js"></script>
+<script>
+    eruda.init();
+    console.log('控制台打印信息');
 </script>
 </html>
