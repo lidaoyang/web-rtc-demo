@@ -138,7 +138,7 @@
         //接收到消息的回调方法
         websocket.onmessage = async function (event) {
             console.log('收到消息：', event.data);
-            let {type, fromUser, msg, sdp, candidate, callType} = JSON.parse(event.data);
+            let {type, fromUser, msg, offerOrAnswer, candidate, callType} = JSON.parse(event.data);
             let mediaConstraints = {};
             if (callType === "video") {
                 mediaConstraints = {video: true, audio: true};
@@ -172,14 +172,14 @@
                     openLocalMedia(mediaConstraints, stream => {
                         // 显示本地视频流
                         localVideo.srcObject = stream;
-                        createOffer(sdp => {
-                            console.log('创建并发送 offer,sdp:', sdp);
+                        createOffer(offer => {
+                            console.log('创建并发送 offer,offer:', offer);
                             let msgObj = {
                                 type: 'offer',
                                 fromUser: username,
                                 toUser: document.getElementById('toUser').value,
                                 callType: callType,
-                                sdp: sdp
+                                offerOrAnswer: offer
                             }
                             websocket.send(JSON.stringify(msgObj));
                         });
@@ -195,21 +195,21 @@
             } else if (type === 'offer') {
                 console.log('收到offer');
                 //先保存收到的 offer
-                saveSdp(sdp, () => {
+                saveSdp(offerOrAnswer, () => {
                     console.log('offer 保存成功');
 
                     //再打开音视频流
                     openLocalMedia(mediaConstraints, stream => {
                         localVideo.srcObject = stream;
                         //最后创建用于 answer 的 SDP 对象
-                        createAnswer(sdp => {
+                        createAnswer(answer => {
                             console.log('创建并发送 answer');
                             let msgObj = {
                                 type: 'answer',
                                 fromUser: username,
                                 toUser: document.getElementById('toUser').value,
                                 callType: callType,
-                                sdp: sdp
+                                offerOrAnswer: answer
                             }
                             websocket.send(JSON.stringify(msgObj));
                         });
@@ -217,8 +217,8 @@
                 });
             } else if (type === 'answer') {
                 console.log('收到 answer');
-                saveSdp(sdp, () => console.log('answer 保存成功'));
-            } else if (type === '_ice') {
+                saveSdp(offerOrAnswer, () => console.log('answer 保存成功'));
+            } else if (type === 'candidate') {
                 //用于交换 candidate
                 saveIceCandidate(candidate);
             }
@@ -233,7 +233,7 @@
         // 2、绑定 收集 candidate 的回调
         bindOnIceCandidate(candidate =>
             websocket.send(JSON.stringify({
-                type: '_ice',
+                type: 'candidate',
                 toUser: document.getElementById('toUser').value,
                 fromUser: username,
                 candidate: candidate

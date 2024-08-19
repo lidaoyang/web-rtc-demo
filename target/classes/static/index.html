@@ -218,7 +218,7 @@
             } else if (type === 'answer') {
                 console.log('收到 answer');
                 saveSdp(sdp, () => console.log('answer 保存成功'));
-            } else if (type === '_ice') {
+            } else if (type === 'candidate') {
                 //用于交换 candidate
                 saveIceCandidate(candidate);
             }
@@ -233,7 +233,7 @@
         // 2、绑定 收集 candidate 的回调
         bindOnIceCandidate(candidate =>
             websocket.send(JSON.stringify({
-                type: '_ice',
+                type: 'candidate',
                 toUser: document.getElementById('toUser').value,
                 fromUser: username,
                 candidate: candidate
