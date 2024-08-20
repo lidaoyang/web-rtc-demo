@@ -19,12 +19,12 @@ let iceServers = {
 //   audio: true //由于没有麦克风，所有如果请求音频，会报错，不过不会影响视频流播放
 // };
 
-// 创建 offer 的信息
-const offerOptions = {
-    iceRestart: true,
-    offerToReceiveAudio: true, //由于没有麦克风，所有如果请求音频，会报错，不过不会影响视频流播放
-};
-// 1、打开本地音视频流
+
+/**
+ * 1、打开本地音视频流
+ * @param mediaConstraints
+ * @param callback
+ */
 const openLocalMedia = (mediaConstraints, callback) => {
     console.log('打开本地视频流');
     navigator.mediaDevices.getUserMedia(mediaConstraints)
@@ -37,12 +37,27 @@ const openLocalMedia = (mediaConstraints, callback) => {
             callback(localMediaStream);
         })
 }
-// 2、创建 PeerConnection 对象
+/**
+ * 2、创建 PeerConnection 对象
+ */
 const createPeerConnection = () => {
     console.log('创建 PeerConnection 对象');
     rtcPeerConnection = new RTCPeerConnection(iceServers);
 }
-// 3、创建用于 offer 的 SDP 对象
+
+/**
+ * 创建 offer 的配置对象
+ * @type {{iceRestart: boolean, offerToReceiveAudio: boolean}}
+ */
+const offerOptions = {
+    iceRestart: true,
+    offerToReceiveAudio: true, //如果没有麦克风，当请求音频，会报错，不过不会影响视频流播放
+};
+
+/**
+ * 3、创建用于 offer 的 SDP 对象
+ * @param callback
+ */
 const createOffer = (callback) => {
     // 调用PeerConnection的 CreateOffer 方法创建一个用于 offer的SDP对象，SDP对象中保存当前音视频的相关参数。
     rtcPeerConnection.createOffer(offerOptions)
@@ -53,7 +68,10 @@ const createOffer = (callback) => {
         })
         .catch(() => console.log('createOffer 失败'));
 }
-// 4、创建用于 answer 的 SDP 对象
+/**
+ * 4、创建用于 answer 的 SDP 对象
+ * @param callback
+ */
 const createAnswer = (callback) => {
     // 调用PeerConnection的 CreateAnswer 方法创建一个 answer的SDP对象
     rtcPeerConnection.createAnswer(offerOptions)
@@ -64,19 +82,32 @@ const createAnswer = (callback) => {
         })
         .catch(() => console.log('createAnswer 失败'))
 }
-// 5、保存远程的 SDP 对象
+
+/**
+ * 5、保存远程的 SDP 对象
+ * @param answerSdp
+ * @param callback
+ */
 const saveSdp = (answerSdp, callback) => {
     rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(answerSdp))
         .then(callback);
 }
-// 6、保存 candidate 信息
+
+/**
+ * 6、保存 candidate 信息
+ * @param candidate
+ */
 const saveIceCandidate = (candidate) => {
     let iceCandidate = new RTCIceCandidate(candidate);
     console.log('addIceCandidate', iceCandidate);
     rtcPeerConnection.addIceCandidate(iceCandidate)
         .then(() => console.log('addIceCandidate 成功'));
 }
-// 7、收集 candidate 的回调
+
+/**
+ * 7、收集 candidate 的回调
+ * @param callback
+ */
 const bindOnIceCandidate = (callback) => {
     console.log('绑定 收集 candidate 的回调');
     // 绑定 收集 candidate 的回调
@@ -86,7 +117,11 @@ const bindOnIceCandidate = (callback) => {
         }
     };
 };
-// 8、获得 远程视频流 的回调
+
+/**
+ * 8、获得 远程视频流 的回调
+ * @param callback
+ */
 const bindOnTrack = (callback) => {
     console.log('绑定 获得 远程视频流 的回调');
     rtcPeerConnection.ontrack = (event) => callback(event.streams[0]);
