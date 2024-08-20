@@ -135,7 +135,7 @@
 
         //接收到消息的回调方法
         websocket.onmessage = async function (event) {
-            console.log('收到消息：', event.data);
+            // console.log('收到消息：', event.data);
             let {type, fromUser, msg, desc, candidate, callType} = JSON.parse(event.data);
             console.log('type:', type);
 
