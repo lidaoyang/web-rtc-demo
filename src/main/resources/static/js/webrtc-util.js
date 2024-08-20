@@ -1,6 +1,9 @@
 //端点对象
 let rtcPeerConnection;
 
+let localVideo = document.getElementById('localVideo');
+let remoteVideo = document.getElementById('remoteVideo');
+
 //本地视频流
 let localMediaStream = null;
 
@@ -13,21 +16,40 @@ let iceServers = {
     ]
 };
 
-// // 本地音视频信息, 用于 打开本地音视频流
-// const mediaConstraints = {
-//   video: {width: 500, height: 300},
-//   audio: true //由于没有麦克风，所有如果请求音频，会报错，不过不会影响视频流播放
-// };
+/**
+ * 本地音频信息, 用于打开本地音频流
+ */
+const mediaConstraints = {
+    audio: {
+        echoCancellation: true, // 开启回声消除
+        noiseSuppression: true, // 开启噪声抑制
+        autoGainControl: true, // 开启自动增益控制
+    }
+};
+
+/**
+ * 音视频约束对象, 用于打开本地音视频流
+ * @type {{video: bigint, audio: {echoCancellation: boolean, autoGainControl: boolean, noiseSuppression: boolean}}}
+ */
+const mediaConstraintsAll = {
+    video: true,
+    audio: {
+        echoCancellation: true, // 开启回声消除
+        noiseSuppression: true, // 开启噪声抑制
+        autoGainControl: true, // 开启自动增益控制
+    }
+};
 
 
 /**
  * 1、打开本地音视频流
- * @param mediaConstraints
+ * @param type
  * @param callback
  */
-const openLocalMedia = (mediaConstraints, callback) => {
-    console.log('打开本地视频流');
-    navigator.mediaDevices.getUserMedia(mediaConstraints)
+const openLocalMedia = (type, callback) => {
+    console.log('打开本地视频流,type:', type);
+    let constraints = type === 'audio' ? mediaConstraints : mediaConstraintsAll;
+    navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             localMediaStream = stream;
             //将 音视频流 添加到 端点 中
@@ -61,10 +83,10 @@ const offerOptions = {
 const createOffer = (callback) => {
     // 调用PeerConnection的 CreateOffer 方法创建一个用于 offer的SDP对象，SDP对象中保存当前音视频的相关参数。
     rtcPeerConnection.createOffer(offerOptions)
-        .then(sdp => {
+        .then(desc => {
             // 保存自己的 SDP 对象
-            rtcPeerConnection.setLocalDescription(sdp)
-                .then(() => callback(sdp));
+            rtcPeerConnection.setLocalDescription(desc)
+                .then(() => callback(desc));
         })
         .catch(() => console.log('createOffer 失败'));
 }
@@ -75,21 +97,21 @@ const createOffer = (callback) => {
 const createAnswer = (callback) => {
     // 调用PeerConnection的 CreateAnswer 方法创建一个 answer的SDP对象
     rtcPeerConnection.createAnswer(offerOptions)
-        .then(sdp => {
+        .then(desc => {
             // 保存自己的 SDP 对象
-            rtcPeerConnection.setLocalDescription(sdp)
-                .then(() => callback(sdp));
+            rtcPeerConnection.setLocalDescription(desc)
+                .then(() => callback(desc));
         })
         .catch(() => console.log('createAnswer 失败'))
 }
 
 /**
  * 5、保存远程的 SDP 对象
- * @param answerSdp
+ * @param desc 创建offer或answer产生session描述对象,(包含字段 type,sdp)
  * @param callback
  */
-const saveSdp = (answerSdp, callback) => {
-    rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(answerSdp))
+const saveSdp = (desc, callback) => {
+    rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(desc))
         .then(callback);
 }
 
@@ -99,7 +121,7 @@ const saveSdp = (answerSdp, callback) => {
  */
 const saveIceCandidate = (candidate) => {
     let iceCandidate = new RTCIceCandidate(candidate);
-    console.log('addIceCandidate', iceCandidate);
+    console.log('addIceCandidate');
     rtcPeerConnection.addIceCandidate(iceCandidate)
         .then(() => console.log('addIceCandidate 成功'));
 }
@@ -126,3 +148,42 @@ const bindOnTrack = (callback) => {
     console.log('绑定 获得 远程视频流 的回调');
     rtcPeerConnection.ontrack = (event) => callback(event.streams[0]);
 };
+
+const hangup = (callback) => {
+    if (remoteVideo.srcObject){
+        console.log('通知对方关闭视频流');
+        // 执行回调,发送挂断信息通知对方
+        callback();
+    }
+    console.log('关闭视频流');
+    // 关闭视频流
+    stopTracks(localVideo);
+    stopTracks(remoteVideo);
+
+    console.log('关闭 PeerConnection');
+    if (rtcPeerConnection) {
+        rtcPeerConnection.ontrack = null;
+        rtcPeerConnection.onremovetrack = null;
+        rtcPeerConnection.onremovestream = null;
+        rtcPeerConnection.onicecandidate = null;
+        rtcPeerConnection.oniceconnectionstatechange = null;
+        rtcPeerConnection.onsignalingstatechange = null;
+        rtcPeerConnection.onicegatheringstatechange = null;
+        rtcPeerConnection.onnegotiationneeded = null;
+
+        rtcPeerConnection.close();
+        rtcPeerConnection = null;
+    }
+}
+
+function stopTracks(videoDom) {
+    let stream = videoDom.srcObject;
+    if (!stream) {
+        return;
+    }
+    stream.getTracks().forEach(track => {
+        track.stop();
+        stream.removeTrack(track);
+    });
+    videoDom.srcObject = null;
+}

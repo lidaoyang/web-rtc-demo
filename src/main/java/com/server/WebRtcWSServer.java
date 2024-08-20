@@ -81,8 +81,8 @@ public class WebRtcWSServer {
             //msg
             String msg = (String) hashMap.get("msg");
 
-            //邀请信令对象/应答信令对象(包含字段 type,sdp)
-            Object offerOrAnswer =  hashMap.get("offerOrAnswer");
+            //创建offer或answer产生session描述对象,(包含字段 type,sdp)
+            Object desc =  hashMap.get("desc");
 
             //ice
             Object candidate  =  hashMap.get("candidate");
@@ -125,14 +125,14 @@ public class WebRtcWSServer {
             if ("offer".equals(type)) {
                 map.put("fromUser",toUser);
                 map.put("callType",callType);
-                map.put("offerOrAnswer",offerOrAnswer);
+                map.put("desc",desc);
             }
 
             //answer
             if ("answer".equals(type)) {
                 map.put("fromUser",toUser);
                 map.put("callType",callType);
-                map.put("offerOrAnswer",offerOrAnswer);
+                map.put("desc",desc);
             }
 
             //ice

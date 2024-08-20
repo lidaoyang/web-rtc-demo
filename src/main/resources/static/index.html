@@ -104,8 +104,6 @@
 </body>
 <script type="text/javascript" th:inline="javascript">
     let username = location.search.replace("?", "");
-    let localVideo = document.getElementById('localVideo');
-    let remoteVideo = document.getElementById('remoteVideo');
     let websocket = null;
 
     WebSocketInit();
@@ -138,13 +136,7 @@
         //接收到消息的回调方法
         websocket.onmessage = async function (event) {
             console.log('收到消息：', event.data);
-            let {type, fromUser, msg, offerOrAnswer, candidate, callType} = JSON.parse(event.data);
-            let mediaConstraints = {};
-            if (callType === "video") {
-                mediaConstraints = {video: true, audio: true};
-            } else {
-                mediaConstraints = {audio: true};
-            }
+            let {type, fromUser, msg, desc, candidate, callType} = JSON.parse(event.data);
             console.log('type:', type);
 
             if (type === 'hangup') {
@@ -169,17 +161,17 @@
                 if (msg === "1") {
                     console.log(document.getElementById('toUser').value + "同意视频通话");
                     // 先打开视频流, 在创建用于 offer 的 SDP 对象
-                    openLocalMedia(mediaConstraints, stream => {
+                    openLocalMedia(callType, stream => {
                         // 显示本地视频流
                         localVideo.srcObject = stream;
-                        createOffer(offer => {
-                            console.log('创建并发送 offer,offer:', offer);
+                        createOffer(desc => {
+                            console.log('创建并发送 offer,offer:', desc);
                             let msgObj = {
                                 type: 'offer',
                                 fromUser: username,
                                 toUser: document.getElementById('toUser').value,
                                 callType: callType,
-                                offerOrAnswer: offer
+                                desc: desc
                             }
                             websocket.send(JSON.stringify(msgObj));
                         });
@@ -195,21 +187,21 @@
             } else if (type === 'offer') {
                 console.log('收到offer');
                 //先保存收到的 offer
-                saveSdp(offerOrAnswer, () => {
+                saveSdp(desc, () => {
                     console.log('offer 保存成功');
 
                     //再打开音视频流
                     openLocalMedia(mediaConstraints, stream => {
                         localVideo.srcObject = stream;
                         //最后创建用于 answer 的 SDP 对象
-                        createAnswer(answer => {
+                        createAnswer(desc => {
                             console.log('创建并发送 answer');
                             let msgObj = {
                                 type: 'answer',
                                 fromUser: username,
                                 toUser: document.getElementById('toUser').value,
                                 callType: callType,
-                                offerOrAnswer: answer
+                                desc: desc
                             }
                             websocket.send(JSON.stringify(msgObj));
                         });
@@ -217,7 +209,7 @@
                 });
             } else if (type === 'answer') {
                 console.log('收到 answer');
-                saveSdp(offerOrAnswer, () => console.log('answer 保存成功'));
+                saveSdp(desc, () => console.log('answer 保存成功'));
             } else if (type === 'candidate') {
                 //用于交换 candidate
                 saveIceCandidate(candidate);
@@ -292,8 +284,15 @@
         //挂断
         document.getElementById('hangup').onclick = function (e) {
             document.getElementById('toUser').style.visibility = 'unset';
-
-            if (localVideo.srcObject) {
+            hangup(() => {
+                //挂断同时，通知对方
+                websocket.send(JSON.stringify({
+                    type: "hangup",
+                    fromUser: username,
+                    toUser: document.getElementById('toUser').value,
+                }));
+            });
+            /*if (localVideo.srcObject) {
                 const videoTracks = localVideo.srcObject.getVideoTracks();
                 videoTracks.forEach(track => {
                     track.stop();
@@ -307,14 +306,15 @@
                     track.stop();
                     remoteVideo.srcObject.removeTrack(track);
                 });
-
-                //挂断同时，通知对方
-                websocket.send(JSON.stringify({
-                    type: "hangup",
-                    fromUser: username,
-                    toUser: document.getElementById('toUser').value,
-                }));
             }
+
+            //挂断同时，通知对方
+            websocket.send(JSON.stringify({
+                type: "hangup",
+                fromUser: username,
+                toUser: document.getElementById('toUser').value,
+            }));
+
             if (rtcPeerConnection) {
                 rtcPeerConnection.ontrack = null;
                 rtcPeerConnection.onremovetrack = null;
@@ -330,7 +330,7 @@
             }
 
             localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
+            remoteVideo.srcObject = null;*/
         }
     }
 </script>
