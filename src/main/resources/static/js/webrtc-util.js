@@ -149,12 +149,10 @@ const bindOnTrack = (callback) => {
     rtcPeerConnection.ontrack = (event) => callback(event.streams[0]);
 };
 
-const hangup = (callback) => {
-    if (remoteVideo.srcObject){
-        console.log('通知对方关闭视频流');
-        // 执行回调,发送挂断信息通知对方
-        callback();
-    }
+/**
+ * 9、挂断(挂断时需要通知远端同时挂断) 关闭 PeerConnection 和音视频流
+ */
+const hangup = () => {
     console.log('关闭视频流');
     // 关闭视频流
     stopTracks(localVideo);

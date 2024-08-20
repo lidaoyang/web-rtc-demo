@@ -141,7 +141,7 @@
 
             if (type === 'hangup') {
                 console.log(msg);
-                document.getElementById('hangup').click();
+                hangup();
             } else if (type === 'call_start') {
                 let msg = "0"
                 if (confirm(fromUser + "发起视频通话，确定接听吗") == true) {
@@ -284,53 +284,15 @@
         //挂断
         document.getElementById('hangup').onclick = function (e) {
             document.getElementById('toUser').style.visibility = 'unset';
-            hangup(() => {
-                //挂断同时，通知对方
-                websocket.send(JSON.stringify({
-                    type: "hangup",
-                    fromUser: username,
-                    toUser: document.getElementById('toUser').value,
-                }));
-            });
-            /*if (localVideo.srcObject) {
-                const videoTracks = localVideo.srcObject.getVideoTracks();
-                videoTracks.forEach(track => {
-                    track.stop();
-                    localVideo.srcObject.removeTrack(track);
-                });
-            }
-
-            if (remoteVideo.srcObject) {
-                const videoTracks = remoteVideo.srcObject.getVideoTracks();
-                videoTracks.forEach(track => {
-                    track.stop();
-                    remoteVideo.srcObject.removeTrack(track);
-                });
-            }
-
+            console.log('通知对方关闭视频流');
             //挂断同时，通知对方
             websocket.send(JSON.stringify({
                 type: "hangup",
                 fromUser: username,
                 toUser: document.getElementById('toUser').value,
             }));
-
-            if (rtcPeerConnection) {
-                rtcPeerConnection.ontrack = null;
-                rtcPeerConnection.onremovetrack = null;
-                rtcPeerConnection.onremovestream = null;
-                rtcPeerConnection.onicecandidate = null;
-                rtcPeerConnection.oniceconnectionstatechange = null;
-                rtcPeerConnection.onsignalingstatechange = null;
-                rtcPeerConnection.onicegatheringstatechange = null;
-                rtcPeerConnection.onnegotiationneeded = null;
-
-                rtcPeerConnection.close();
-                rtcPeerConnection = null;
-            }
-
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;*/
+            //挂断
+            hangup();
         }
     }
 </script>
