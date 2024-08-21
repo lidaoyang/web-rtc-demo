@@ -206,8 +206,8 @@
                     // 先打开视频流, 在创建用于 offer 的 SDP 对象
                     openLocalMedia(callType, stream => {
                         // 显示本地视频流
+                        localVideo.srcObject = stream;
                         if (callType === 'video') {
-                            localVideo.srcObject = stream;
                             localVideo.classList.remove('hide');
                         }
                         createOffer(desc => {
@@ -238,8 +238,8 @@
 
                     //再打开音视频流
                     openLocalMedia(mediaConstraints, stream => {
+                        localVideo.srcObject = stream;
                         if (callType === 'video') {
-                            localVideo.srcObject = stream;
                             localVideo.classList.remove('hide');
                         }
                         //最后创建用于 answer 的 SDP 对象
@@ -340,6 +340,7 @@
                 fromUser: username,
                 toUser: document.getElementById('toUser').value,
             }));
+            localVideo.classList.add('hide');
             //挂断
             hangup();
         }
