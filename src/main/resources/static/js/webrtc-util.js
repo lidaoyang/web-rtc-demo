@@ -31,8 +31,27 @@ const mediaConstraints = {
  * 音视频约束对象, 用于打开本地音视频流
  * @type {{video: bigint, audio: {echoCancellation: boolean, autoGainControl: boolean, noiseSuppression: boolean}}}
  */
-const mediaConstraintsAll = {
-    video: true,
+const mediaConstraintsPC = {
+    video: {
+        width: {ideal:600},
+        height: {ideal: 800},
+    },
+    audio: {
+        echoCancellation: true, // 开启回声消除
+        noiseSuppression: true, // 开启噪声抑制
+        autoGainControl: true, // 开启自动增益控制
+    }
+};
+
+/**
+ * 音视频约束对象, 用于打开本地音视频流
+ * @type {{video: bigint, audio: {echoCancellation: boolean, autoGainControl: boolean, noiseSuppression: boolean}}}
+ */
+const mediaConstraintsMobile = {
+    video: {
+        width: {ideal:360},
+        height: {ideal: 700},
+    },
     audio: {
         echoCancellation: true, // 开启回声消除
         noiseSuppression: true, // 开启噪声抑制
@@ -48,12 +67,14 @@ const mediaConstraintsAll = {
  */
 const openLocalMedia = (type, callback) => {
     console.log('打开本地视频流,type:', type);
-    let constraints = type === 'audio' ? mediaConstraints : mediaConstraintsAll;
+    let constraints = type === 'audio' ? mediaConstraints : (mobile? mediaConstraintsPC :mediaConstraintsMobile);
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             localMediaStream = stream;
             //将 音视频流 添加到 端点 中
             for (const track of localMediaStream.getTracks()) {
+                const settings = track.getSettings();
+                console.log('Actual video resolution: w:' + settings.width + ', h:' + settings.height);
                 rtcPeerConnection.addTrack(track, localMediaStream);
             }
             callback(localMediaStream);
@@ -146,13 +167,18 @@ const bindOnIceCandidate = (callback) => {
  */
 const bindOnTrack = (callback) => {
     console.log('绑定 获得 远程视频流 的回调');
-    rtcPeerConnection.ontrack = (event) => callback(event.streams[0]);
+    rtcPeerConnection.ontrack = (event) => {
+        let stream = event.streams[0];
+        callback(stream)
+    };
 };
 
 /**
  * 9、挂断(挂断时需要通知远端同时挂断) 关闭 PeerConnection 和音视频流
  */
 const hangup = () => {
+    document.getElementById('toUser').style.visibility = 'unset';
+    localVideo.classList.add('hide');
     console.log('关闭视频流');
     // 关闭视频流
     stopTracks(localVideo);
@@ -185,3 +211,36 @@ function stopTracks(videoDom) {
     });
     videoDom.srcObject = null;
 }
+
+
+
+/**
+ * 判断访问类型是PC端还是手机端
+ */
+function isMobile() {
+    let userAgentInfo = navigator.userAgent;
+
+    let mobileAgents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod", "OpenHarmony", "Phone"];
+
+    let mobile_flag = false;
+
+    //根据userAgent判断是否是手机
+    for (let v = 0; v < mobileAgents.length; v++) {
+        if (userAgentInfo.indexOf(mobileAgents[v]) > 0) {
+            mobile_flag = true;
+            break;
+        }
+    }
+
+    let screen_width = window.screen.width;
+    let screen_height = window.screen.height;
+
+    //根据屏幕分辨率判断是否是手机
+    if (screen_width < 500 && screen_height < 800) {
+        mobile_flag = true;
+    }
+
+    return mobile_flag;
+}
+
+let mobile = isMobile(); // false为PC端，true为手机端
