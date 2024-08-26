@@ -33,8 +33,9 @@ const mediaConstraints = {
  */
 const mediaConstraintsPC = {
     video: {
-        width: {ideal:600},
-        height: {ideal: 800},
+        // width: {ideal:600},
+        // height: {ideal: 800},
+        aspectRatio: 3/4
     },
     audio: {
         echoCancellation: true, // 开启回声消除
@@ -49,8 +50,9 @@ const mediaConstraintsPC = {
  */
 const mediaConstraintsMobile = {
     video: {
-        width: {ideal:360},
-        height: {ideal: 700},
+        // width: {ideal:360},
+        // height: {ideal: 700},
+        aspectRatio: 3.5/7
     },
     audio: {
         echoCancellation: true, // 开启回声消除
